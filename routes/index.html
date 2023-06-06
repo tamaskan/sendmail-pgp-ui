@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="bootstrap.css" rel="stylesheet" />
+    <title>Vaultwarden PGP UI</title>
+    <style type="text/css">
+      footer {
+        padding-top: 0px;
+        margin-top: 10%;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="form-signin w-100 m-auto login">
+      <form>
+        <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
+
+        <div class="form-floating">
+          <input
+            type="email"
+            class="form-control"
+            id="client_id"
+            placeholder="name@example.com"
+          />
+          <label for="client_id">client_id</label>
+        </div>
+        <div class="form-floating">
+          <input
+            type="password"
+            class="form-control"
+            id="client_secret"
+            placeholder="Password"
+          />
+          <label for="client_secret">client_secret</label>
+        </div>
+
+        <button class="btn btn-primary w-100 py-2 loginbutton" type="submit">
+          Sign in
+        </button>
+
+        <div class="alert alert-danger" id="loginstatus" role="alert">
+          Login failed
+        </div>
+      </form>
+    </main>
+
+    <main class="form-signin w-100 m-auto mainui">
+      <form class="row g-3">
+        <div class="col-auto">
+          <label for="email" class="visually-hidden">Vaultwarden-Email</label>
+          <input
+            type="email"
+            class="form-control"
+            id="email"
+            placeholder="Vaultwarden-Email"
+          />
+        </div>
+      </form>
+
+      <div class="mb-3">
+        <label for="pgp" class="form-label" placeholder="PGP-Key"></label>
+        <textarea
+          class="form-control"
+          id="pgp"
+          rows="3"
+          placeholder="Public PGP-Key"
+        ></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label for="permissions" class="form-label"
+          >Encrypt following Email Subjects</label
+        >
+        <textarea class="form-control" id="permissions" rows="3">
+  Master Password Has Been Changed
+  Your Email Change
+  Delete Your Account
+  Emergency access request for
+  Emergency access contact for
+  Emergency access request by
+  Emergency access request to
+  Incomplete Two-Step Login From
+  Invitation to
+  New Device Logged In From
+  Your master password hint
+  Removed from
+  Emergency access for
+  Join
+  You have been removed from
+  Vaultwarden SMTP Test
+  Your Two-step Login Verification Code
+  Verify Your Email
+  Welcome
+  </textarea
+        >
+      </div>
+
+      <button class="btn btn-primary verify" type="submit">Verify</button>
+
+      <div class="alert alert-success" id="success" role="alert">
+        Settings saved
+      </div>
+    </main>
+
+    <style>
+      html,
+      body {
+        height: 100%;
+      }
+
+      .form-signin {
+        max-width: 630px;
+        padding: 1rem;
+      }
+
+      .form-signin .form-floating:focus-within {
+        z-index: 2;
+      }
+
+      .form-signin input[type="email"] {
+        margin-bottom: -1px;
+        border-bottom-right-radius: 0;
+        border-bottom-left-radius: 0;
+      }
+
+      .form-signin input[type="password"] {
+        margin-bottom: 10px;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+      }
+
+      .mainui {
+        /*display: none;*/
+      }
+      #loginstatus {
+        display: none;
+      }
+    </style>
+
+    <script src="bootstrap.js"></script>
+
+    <script src="jquery.js "></script>
+
+    <script>
+      $(".verify").on("click", function (event) {
+        event.preventDefault();
+        console.log($("#client_id").val());
+        console.log($("#client_secret").val());
+        console.log($("#email").val());
+        console.log($("#pgp").val());
+        console.log($("#permissions").val());
+
+        var data = {
+          client_id: $("#client_id").val(),
+          client_secret: $("#client_secret").val(),
+          email: $("#email").val(),
+          pgp: $("#pgp").val(),
+          permissions: $("#permissions").val(),
+        };
+
+        $.post("./testemail", data);
+      });
+
+      $(".loginbutton").on("click", function (event) {
+        event.preventDefault();
+        console.log($("#client_id").val());
+        console.log($("#client_secret").val());
+
+        var data = {
+          grant_type: "client_credentials",
+          scope: "api",
+          client_id: $("#client_id").val(),
+          client_secret: $("#client_secret").val(),
+          device_identifier: "webui",
+          device_name: "webui",
+          device_type: "webui",
+          //username: $("#email").val(),
+        };
+
+        $.post("./identity/connect/token", data).done(function (data) {
+          console.log(data);
+          if (data.indexOf("access_token") >= 0) {
+            $(".login").hide();
+            $(".mainui").show();
+          } else {
+            $("#loginstatus").show();
+          }
+        });
+      });
+
+      //prefill when query exists
+      let searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has("email")) {
+        $("#email").val(searchParams.get("email"));
+      }
+      if (searchParams.has("pgp")) {
+        $("#pgp").val(searchParams.get("pgp"));
+      }
+      if (searchParams.has("permissions")) {
+        $("#permissions").val(searchParams.get("permissions"));
+      }
+      if (searchParams.has("success")) {
+        $("#success").show();
+      }
+    </script>
+  </body>
+</html>
