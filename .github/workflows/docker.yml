@@ -27,7 +27,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: tamaskan/sendmail-pgp-ui:latest
-          secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.PERSONAL }}
-          env: BUILDKIT_NO_CLIENT_TOKEN=1
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}/server:${{ github.sha }}
