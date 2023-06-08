@@ -30,3 +30,4 @@ jobs:
           tags: tamaskan/sendmail-pgp-ui:latest
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.PERSONAL }}
+          env: BUILDKIT_NO_CLIENT_TOKEN=1
