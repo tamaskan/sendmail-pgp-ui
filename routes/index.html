@@ -132,7 +132,7 @@
       }
 
       .mainui {
-        /*display: none;*/
+        display: none;
       }
       #loginstatus {
         display: none;
@@ -158,6 +158,7 @@
           email: $("#email").val(),
           pgp: $("#pgp").val(),
           permissions: $("#permissions").val(),
+          site: window.location.origin,
         };
 
         $.post("./testemail", data);

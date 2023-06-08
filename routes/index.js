@@ -6,7 +6,7 @@ const { exec } = require("child_process");
 
 const fs = require("fs");
 
-const crypto = require("crypto");
+const crypto = require("node:crypto");
 
 const request = require("axios");
 
@@ -51,6 +51,10 @@ router.get("/bootstrap.js", (req, res) => {
 
 router.get("/jquery.js", (req, res) => {
   res.sendFile(__dirname + "/jquery.js");
+});
+
+router.get("/favicon.ico", (req, res) => {
+  res.sendFile(__dirname + "/favicon.ico");
 });
 
 router.get("/", (req, res) => {
@@ -134,7 +138,9 @@ router.post("/testemail", (req, res) => {
           jwtsecret()
         );
         var encryptedmessage =
-          "<a href='/?token=" +
+          "<a href=" +
+          req.body.site +
+          "'/?token=" +
           encrypt(token, publicKeyArmored) +
           "'>Activate Settings</a>";
 
