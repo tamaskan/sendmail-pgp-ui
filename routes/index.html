@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="bootstrap.css" rel="stylesheet" />
+    <link rel="icon" href="favicon.ico" />
     <title>Vaultwarden PGP UI</title>
     <style type="text/css">
       footer {
@@ -15,7 +16,7 @@
   <body>
     <main class="form-signin w-100 m-auto login">
       <form>
-        <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
+        <h1 class="h3 mb-3 fw-normal">Please sign in to Vaultwarden</h1>
 
         <div class="form-floating">
           <input
@@ -197,6 +198,7 @@
       });
 
       //prefill when query exists
+      //TODO redo -> max get-length
       let searchParams = new URLSearchParams(window.location.search);
       if (searchParams.has("email")) {
         $("#email").val(searchParams.get("email"));

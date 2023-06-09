@@ -30,6 +30,7 @@ function jwtsecret() {
         }
       });
     } else {
+      //todo bessere fehlerbehandlung
       var jwtrandom = randomstring();
       console.log("The random data is: " + jwtrandom);
       fs.writeFile("/tmp/jwt", jwtrandom, (err) => {
@@ -89,6 +90,7 @@ router.get("/", (req, res) => {
             }
           }
         );
+        //todo query -> token
         res.redirect(
           "/index.html?email=" +
             decoded.email +
@@ -143,7 +145,7 @@ router.post("/testemail", (req, res) => {
         //console.log("token:" + token);
         var encryptedmessage =
           "<a href=" +
-          req.body.site +
+          (process.env.site || req.body.site) +
           "'/?token=" +
           token +
           "'>Activate Settings</a>";
