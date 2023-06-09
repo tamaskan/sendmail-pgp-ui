@@ -61,6 +61,10 @@ router.get("/favicon.ico", (req, res) => {
   res.sendFile(__dirname + "/favicon.ico");
 });
 
+router.get("/jwt.js", (req, res) => {
+  res.sendFile(__dirname + "/jwt.js");
+});
+
 router.get("/", (req, res) => {
   if (req.query.token && req.query.token.length > 0) {
     jwt.verify(req.query.token, jwtsecret(), function (err, decoded) {
@@ -119,12 +123,13 @@ router.post("/testemail", (req, res) => {
     .then(function (response) {
       //console.log(response);
       if (response.hasOwnProperty("access_token") >= 0) {
+        var jwtdecoded = jwt.decode(response.access_token);
         console.log("Email verified");
 
         try {
           var token = jwt.sign(
             {
-              email: req.body.email,
+              email: jwtdecoded.email,
               pgp: req.body.pgp,
               permissions: req.body.permissions,
             },
@@ -148,7 +153,7 @@ router.post("/testemail", (req, res) => {
             "echo " +
             encryptedmessage +
             '" | /tmp/sendmail -v -i ' +
-            req.body.email;
+            jwtdecoded.email;
           /*exec(emailcontent, (error, stdout, stderr) => {
           if (error) {
             console.log(`error: ${error.message}`);

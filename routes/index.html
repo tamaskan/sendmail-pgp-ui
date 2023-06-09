@@ -143,7 +143,9 @@
 
     <script src="bootstrap.js"></script>
 
-    <script src="jquery.js "></script>
+    <script src="jquery.js"></script>
+
+    <script src="jwt.js"></script>
 
     <script>
       $(".verify").on("click", function (event) {
@@ -157,7 +159,6 @@
         var data = {
           client_id: $("#client_id").val().trim(),
           client_secret: $("#client_secret").val().trim(),
-          email: $("#email").val().trim(),
           pgp: $("#pgp").val().trim(),
           permissions: $("#permissions").val().trim(),
           site: window.location.origin,
@@ -183,10 +184,11 @@
 
         $.post("./identity/connect/token", data)
           .done(function (data) {
-            //console.log(data);
             if (data.hasOwnProperty("access_token")) {
+              var jwt = jwt_decode(data.access_token);
               $(".login").hide();
               $(".mainui").show();
+              $("#email").val(jwt.email);
             }
           })
           .fail(function () {
