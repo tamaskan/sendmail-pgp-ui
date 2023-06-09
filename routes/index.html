@@ -134,8 +134,10 @@
       .mainui {
         display: none;
       }
-      #loginstatus {
+      #loginstatus,
+      #success {
         display: none;
+        margin-top: 10px;
       }
     </style>
 
@@ -146,18 +148,18 @@
     <script>
       $(".verify").on("click", function (event) {
         event.preventDefault();
-        console.log($("#client_id").val());
-        console.log($("#client_secret").val());
-        console.log($("#email").val());
-        console.log($("#pgp").val());
-        console.log($("#permissions").val());
+        console.log($("#client_id").val().trim());
+        console.log($("#client_secret").val().trim());
+        console.log($("#email").val().trim());
+        console.log($("#pgp").val().trim());
+        console.log($("#permissions").val().trim());
 
         var data = {
-          client_id: $("#client_id").val(),
-          client_secret: $("#client_secret").val(),
-          email: $("#email").val(),
-          pgp: $("#pgp").val(),
-          permissions: $("#permissions").val(),
+          client_id: $("#client_id").val().trim(),
+          client_secret: $("#client_secret").val().trim(),
+          email: $("#email").val().trim(),
+          pgp: $("#pgp").val().trim(),
+          permissions: $("#permissions").val().trim(),
           site: window.location.origin,
         };
 
@@ -166,29 +168,30 @@
 
       $(".loginbutton").on("click", function (event) {
         event.preventDefault();
-        console.log($("#client_id").val());
-        console.log($("#client_secret").val());
+        console.log($("#client_id").val().trim());
+        console.log($("#client_secret").val().trim());
 
         var data = {
           grant_type: "client_credentials",
           scope: "api",
-          client_id: $("#client_id").val(),
-          client_secret: $("#client_secret").val(),
+          client_id: $("#client_id").val().trim(),
+          client_secret: $("#client_secret").val().trim(),
           device_identifier: "webui",
           device_name: "webui",
           device_type: "webui",
-          //username: $("#email").val(),
         };
 
-        $.post("./identity/connect/token", data).done(function (data) {
-          console.log(data);
-          if (data.indexOf("access_token") >= 0) {
-            $(".login").hide();
-            $(".mainui").show();
-          } else {
+        $.post("./identity/connect/token", data)
+          .done(function (data) {
+            //console.log(data);
+            if (data.hasOwnProperty("access_token")) {
+              $(".login").hide();
+              $(".mainui").show();
+            }
+          })
+          .fail(function () {
             $("#loginstatus").show();
-          }
-        });
+          });
       });
 
       //prefill when query exists
@@ -204,6 +207,8 @@
       }
       if (searchParams.has("success")) {
         $("#success").show();
+        $(".login").hide();
+        $(".mainui").show();
       }
     </script>
   </body>

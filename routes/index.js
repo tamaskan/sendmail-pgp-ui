@@ -14,31 +14,35 @@ const jwt = require("jsonwebtoken");
 
 const openpgp = require("openpgp");
 
+function randomstring() {
+  var random = crypto.randomBytes(256).toString("hex");
+  return random;
+}
+
 function jwtsecret() {
   var jwtsecret = "/tmp/jwt";
 
-  fs.readFile(jwtsecret, (err, data) => {
-    if (!err && data) {
-      return data;
+  try {
+    if (fs.existsSync(jwtsecret)) {
+      fs.readFile(jwtsecret, (err, data) => {
+        if (!err && data) {
+          return data;
+        }
+      });
     } else {
-      crypto.randomBytes(127, (err, buf) => {
+      var jwtrandom = randomstring();
+      console.log("The random data is: " + jwtrandom);
+      fs.writeFile("/tmp/jwt", jwtrandom, (err) => {
         if (err) {
-          // Prints error
-          console.log(err);
+          console.error(err);
           return;
         }
-
-        // Prints random bytes of generated data
-        console.log("The random data is: " + buf.toString("hex"));
-        fs.writeFile("/tmp/jwt", buf.toString("hex"), (err) => {
-          if (err) {
-            console.error(err);
-          }
-        });
-        return buf.toString("hex");
       });
+      return jwtrandom;
     }
-  });
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 router.get("/bootstrap.css", (req, res) => {
@@ -81,9 +85,8 @@ router.get("/", (req, res) => {
             }
           }
         );
-        res.sendFile(
-          __dirname +
-            "/index.html?email=" +
+        res.redirect(
+          "/index.html?email=" +
             decoded.email +
             "&pgp=" +
             decoded.pgp +
@@ -93,15 +96,6 @@ router.get("/", (req, res) => {
         );
       }
     });
-    res.sendFile(
-      __dirname +
-        "/index.html?email=" +
-        decoded.email +
-        "&pgp=" +
-        decoded.pgp +
-        "&permissions=" +
-        decoded.permissions
-    );
   }
 
   res.sendFile(__dirname + "/index.html");
@@ -109,47 +103,53 @@ router.get("/", (req, res) => {
 
 router.post("/testemail", (req, res) => {
   var data = {
-    grant_type: "password",
+    grant_type: "client_credentials",
     scope: "api",
     client_id: req.body.client_id,
     client_secret: req.body.client_secret,
-    //email: req.query.email,
     device_identifier: "webui-node",
     device_name: "webui-node",
     device_type: "webui-node",
-    //username: req.query.email,
   };
 
   request
-    .post("./identity/connect/token", data)
+    .post("./identity/connect/token", data, {
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+    })
     .then(function (response) {
-      console.log(response);
-      if (response.indexOf("access_token") >= 0) {
+      //console.log(response);
+      if (response.hasOwnProperty("access_token") >= 0) {
         console.log("Email verified");
 
-        const publicKeyArmored = req.body.pgp;
+        try {
+          var token = jwt.sign(
+            {
+              email: req.body.email,
+              pgp: req.body.pgp,
+              permissions: req.body.permissions,
+            },
+            jwtsecret()
+          );
+        } catch (err) {
+          console.log(err);
+          res.status(500).json("error.Message");
+        }
 
-        var token = jwt.sign(
-          {
-            email: req.body.email,
-            pgp: req.body.pgp,
-            permissions: req.body.permissions,
-          },
-          jwtsecret()
-        );
+        //console.log("token:" + token);
         var encryptedmessage =
           "<a href=" +
           req.body.site +
           "'/?token=" +
-          encrypt(token, publicKeyArmored) +
+          token +
           "'>Activate Settings</a>";
 
-        var emailcontent =
-          "echo " +
-          encryptedmessage +
-          '" | /tmp/sendmail -v -i ' +
-          req.body.email;
-        exec(emailcontent, (error, stdout, stderr) => {
+        encrypt(encryptedmessage, req.body.pgp).then((response) => {
+          var emailcontent =
+            "echo " +
+            encryptedmessage +
+            '" | /tmp/sendmail -v -i ' +
+            req.body.email;
+          /*exec(emailcontent, (error, stdout, stderr) => {
           if (error) {
             console.log(`error: ${error.message}`);
             return;
@@ -159,22 +159,22 @@ router.post("/testemail", (req, res) => {
             return;
           }
           console.log(`stdout: ${stdout}`);
+        });*/
+          res.status(200).json(emailcontent);
         });
       }
     })
     .catch(function (error) {
-      //console.log("error");
-      //console.log(req.body);
+      res.status(500).json("error.Message");
     });
 });
 
-async function encrypt(message, key) {
-  const plainData = message;
+async function encrypt(mymessage, mykey) {
   const encrypted = await openpgp.encrypt({
-    message: openpgp.Message.fromText(plainData),
-    publicKeys: key,
+    message: await openpgp.createMessage({ text: mymessage }),
+    encryptionKeys: await openpgp.readKey({ armoredKey: mykey }),
   });
 
-  return encrypted.data;
+  return encrypted;
 }
 module.exports = router;
