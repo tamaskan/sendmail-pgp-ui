@@ -14,13 +14,15 @@ const jwt = require("jsonwebtoken");
 
 const openpgp = require("openpgp");
 
+const Handlebars = require("handlebars");
+
 function randomstring() {
   var random = crypto.randomBytes(256).toString("hex");
   return random;
 }
 
 function jwtsecret() {
-  var jwtsecret = "/tmp/jwt";
+  var jwtsecret = process.env.jwtlocation || "/tmp/jwt";
 
   try {
     if (fs.existsSync(jwtsecret)) {
@@ -30,13 +32,11 @@ function jwtsecret() {
         }
       });
     } else {
-      //todo bessere fehlerbehandlung
       var jwtrandom = randomstring();
       console.log("The random data is: " + jwtrandom);
-      fs.writeFile("/tmp/jwt", jwtrandom, (err) => {
+      fs.writeFile(jwtsecret, jwtrandom, (err) => {
         if (err) {
           console.error(err);
-          return;
         }
       });
       return jwtrandom;
@@ -90,7 +90,7 @@ router.get("/", (req, res) => {
             }
           }
         );
-        //todo query -> token
+
         res.redirect(
           "/index.html?email=" +
             decoded.email +
@@ -107,7 +107,7 @@ router.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-router.post("/testemail", (req, res) => {
+router.post("/test-email", (req, res) => {
   var data = {
     grant_type: "client_credentials",
     scope: "api",
@@ -138,36 +138,34 @@ router.post("/testemail", (req, res) => {
             jwtsecret()
           );
         } catch (err) {
-          console.log(err);
-          res.status(500).json("error.Message");
+          console.error(err);
+          res.status(500).json("error signing jwt");
         }
 
-        //console.log("token:" + token);
-        var encryptedmessage =
-          "<a href=" +
-          (process.env.site || req.body.site) +
-          "'/?token=" +
-          token +
-          "'>Activate Settings</a>";
+        const source =
+          '<a href="{{site}}/?token={{token}}">Activate PGP Settings</a>';
+        const template = Handlebars.compile(source);
+        const emailcontents = template({
+          site: process.env.site || req.body.site,
+          token: token,
+        });
 
-        encrypt(encryptedmessage, req.body.pgp).then((response) => {
-          var emailcontent =
-            "echo " +
-            encryptedmessage +
-            '" | /tmp/sendmail -v -i ' +
-            jwtdecoded.email;
-          /*exec(emailcontent, (error, stdout, stderr) => {
-          if (error) {
-            console.log(`error: ${error.message}`);
-            return;
-          }
-          if (stderr) {
-            console.log(`stderr: ${stderr}`);
-            return;
-          }
-          console.log(`stdout: ${stdout}`);
-        });*/
-          res.status(200).json(emailcontent);
+        encrypt(emailcontents, req.body.pgp).then((response) => {
+          var execcommand =
+            "echo " + response + " | /tmp/sendmail -v -i " + jwtdecoded.email;
+          console.log(execcommand);
+          exec(execcommand, (error, stdout, stderr) => {
+            if (error) {
+              console.error(`error: ${error.message}`);
+              return;
+            }
+            if (stderr) {
+              console.error(`stderr: ${stderr}`);
+              return;
+            }
+            console.log(`stdout: ${stdout}`);
+          });
+          res.status(200).json("exec ok");
         });
       }
     })

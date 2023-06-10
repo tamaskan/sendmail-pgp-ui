@@ -165,7 +165,16 @@
           site: window.location.origin,
         };
 
-        $.post("./testemail", data);
+        console.log(
+          "get-length:" +
+            (data.pgp.length +
+              data.permissions.length +
+              data.site.length +
+              50) +
+            "/2,083"
+        );
+
+        $.post("./test-email", data);
       });
 
       $(".loginbutton").on("click", function (event) {
@@ -198,7 +207,6 @@
       });
 
       //prefill when query exists
-      //TODO redo -> max get-length
       let searchParams = new URLSearchParams(window.location.search);
       if (searchParams.has("email")) {
         $("#email").val(searchParams.get("email"));
