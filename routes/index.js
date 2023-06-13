@@ -16,6 +16,19 @@ const openpgp = require("openpgp");
 
 const Handlebars = require("handlebars");
 
+const nodemailer = require("nodemailer");
+
+const os = require("os");
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SENDMAIL_SMART_HOST,
+  port: process.env.SENDMAIL_SMART_PORT,
+  auth: {
+    user: process.env.SENDMAIL_SMART_LOGIN,
+    pass: process.env.SENDMAIL_SMART_PASSWORD,
+  },
+});
+
 function randomstring() {
   var random = crypto.randomBytes(256).toString("hex");
   return random;
@@ -24,75 +37,82 @@ function randomstring() {
 function jwtsecret() {
   var jwtsecret = process.env.jwtlocation || "/tmp/jwt";
 
-  try {
-    if (fs.existsSync(jwtsecret)) {
-      fs.readFile(jwtsecret, (err, data) => {
-        if (!err && data) {
-          return data;
-        }
-      });
-    } else {
-      var jwtrandom = randomstring();
-      console.log("The random data is: " + jwtrandom);
+  if (fs.existsSync(jwtsecret)) {
+    fs.readFile(jwtsecret, (err, data) => {
+      if (!err && data) {
+        return data;
+      }
+    });
+  } else {
+    var jwtrandom = randomstring();
+    console.log("The random data is: " + jwtrandom);
+    if (os.type() == "Linux") {
       fs.writeFile(jwtsecret, jwtrandom, (err) => {
         if (err) {
           console.error(err);
         }
       });
-      return jwtrandom;
+    } else {
+      console.log(os.type());
     }
-  } catch (err) {
-    console.error(err);
+
+    return jwtrandom;
   }
 }
 
-router.get("/bootstrap.css", (req, res) => {
+router.get("/pgp/bootstrap.css", (req, res) => {
   res.sendFile(__dirname + "/bootstrap.css");
 });
 
-router.get("/bootstrap.js", (req, res) => {
+router.get("/pgp/bootstrap.js", (req, res) => {
   res.sendFile(__dirname + "/bootstrap.js");
 });
 
-router.get("/jquery.js", (req, res) => {
+router.get("/pgp/jquery.js", (req, res) => {
   res.sendFile(__dirname + "/jquery.js");
 });
 
-router.get("/favicon.ico", (req, res) => {
+router.get("/pgp/favicon.ico", (req, res) => {
   res.sendFile(__dirname + "/favicon.ico");
 });
 
-router.get("/jwt.js", (req, res) => {
+router.get("/pgp/jwt.js", (req, res) => {
   res.sendFile(__dirname + "/jwt.js");
 });
 
-router.get("/", (req, res) => {
+router.get("/pgp/", (req, res) => {
   if (req.query.token && req.query.token.length > 0) {
     jwt.verify(req.query.token, jwtsecret(), function (err, decoded) {
+      if (err) {
+        console.log("invalid signature");
+        res.redirect("/pgp/?signature=invalid");
+      }
       if (decoded) {
         var emailhash = crypto
           .createHash("md5")
           .update(decoded.email)
           .digest("hex");
 
-        fs.writeFile("/keys/" + emailhash + ".pgp", decoded.pgp, (err) => {
-          if (err) {
-            console.error(err);
-          }
-        });
-
-        fs.writeFile(
-          "/keys/" + emailhash + ".config",
-          decoded.permissions,
-          (err) => {
+        if (os.type() == "Linux") {
+          fs.writeFile("/keys/" + emailhash + ".pgp", decoded.pgp, (err) => {
             if (err) {
               console.error(err);
             }
-          }
-        );
+          });
+
+          fs.writeFile(
+            "/keys/" + emailhash + ".config",
+            decoded.permissions,
+            (err) => {
+              if (err) {
+                console.error(err);
+              }
+            }
+          );
+        }
 
         res.redirect(
-          "/index.html?email=" +
+          "/pgp/?email=" +
             decoded.email +
             "&pgp=" +
             decoded.pgp +
@@ -107,7 +127,7 @@ router.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-router.post("/test-email", (req, res) => {
+router.post("/pgp/test-email", (req, res) => {
   var data = {
     grant_type: "client_credentials",
     scope: "api",
@@ -119,14 +139,15 @@ router.post("/test-email", (req, res) => {
   };
 
   request
-    .post("./identity/connect/token", data, {
+    .post(req.body.site + "/identity/connect/token", data, {
       headers: { "content-type": "application/x-www-form-urlencoded" },
     })
     .then(function (response) {
-      //console.log(response);
-      if (response.hasOwnProperty("access_token") >= 0) {
-        var jwtdecoded = jwt.decode(response.access_token);
-        console.log("Email verified");
+      //console.log(response.data);
+      if (response.data.hasOwnProperty("access_token")) {
+        //console.log(response.access_token);
+        var jwtdecoded = jwt.decode(response.data.access_token, { json: true });
+        console.log("Email verified: " + jwtdecoded.email);
 
         try {
           var token = jwt.sign(
@@ -142,30 +163,23 @@ router.post("/test-email", (req, res) => {
           res.status(500).json("error signing jwt");
         }
 
-        const source =
-          '<a href="{{site}}/?token={{token}}">Activate PGP Settings</a>';
+        const source = "{{site}}/pgp/?token={{token}}";
         const template = Handlebars.compile(source);
         const emailcontents = template({
           site: process.env.site || req.body.site,
           token: token,
         });
-
+        //console.log("raw: " + emailcontents);
         encrypt(emailcontents, req.body.pgp).then((response) => {
-          var execcommand =
-            "echo " + response + " | /tmp/sendmail -v -i " + jwtdecoded.email;
-          console.log(execcommand);
-          exec(execcommand, (error, stdout, stderr) => {
-            if (error) {
-              console.error(`error: ${error.message}`);
-              return;
-            }
-            if (stderr) {
-              console.error(`stderr: ${stderr}`);
-              return;
-            }
-            console.log(`stdout: ${stdout}`);
+          //console.log("encrypted: " + response);
+          transporter.sendMail({
+            from: process.env.SENDMAIL_SMART_LOGIN,
+            to: jwtdecoded.email,
+            subject: "Verify",
+            text: response,
           });
-          res.status(200).json("exec ok");
+
+          res.status(200).json("mail ok");
         });
       }
     })

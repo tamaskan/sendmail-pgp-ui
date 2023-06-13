@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="bootstrap.css" rel="stylesheet" />
-    <link rel="icon" href="favicon.ico" />
+    <link rel="icon" href="/pgp/favicon.ico" />
     <title>Vaultwarden PGP UI</title>
     <style type="text/css">
       footer {
@@ -43,6 +43,10 @@
 
         <div class="alert alert-danger" id="loginstatus" role="alert">
           Login failed
+        </div>
+
+        <div class="alert alert-danger" id="signaturefail" role="alert">
+          Token not valid
         </div>
       </form>
     </main>
@@ -136,7 +140,8 @@
         display: none;
       }
       #loginstatus,
-      #success {
+      #success,
+      #signaturefail {
         display: none;
         margin-top: 10px;
       }
@@ -192,7 +197,7 @@
           device_type: "webui",
         };
 
-        $.post("./identity/connect/token", data)
+        $.post(window.location.origin + "/identity/connect/token", data)
           .done(function (data) {
             if (data.hasOwnProperty("access_token")) {
               var jwt = jwt_decode(data.access_token);
@@ -221,6 +226,9 @@
         $("#success").show();
         $(".login").hide();
         $(".mainui").show();
+      }
+      if (searchParams.has("signature")) {
+        $("#signaturefail").show();
       }
     </script>
   </body>
