@@ -41,7 +41,7 @@ function jwtsecret() {
     }
   } else {
     var jwtrandom = randomstring();
-    //console.log("The random data is: " + jwtrandom);
+
     if (os.type() == "Linux") {
       fs.writeFile(jwtsecret, jwtrandom, (err) => {
         if (err) {
