@@ -113,6 +113,12 @@
       <div class="alert alert-success" id="success" role="alert">
         Settings saved
       </div>
+      <div class="alert alert-success" id="emailsent" role="alert">
+        Email sent
+      </div>
+      <div class="alert alert-danger" id="emailerror" role="alert">
+        Email Error
+      </div>
     </main>
 
     <style>
@@ -147,7 +153,9 @@
       }
       #loginstatus,
       #success,
-      #signaturefail {
+      #signaturefail,
+      #emailsent,
+      #emailerror {
         display: none;
         margin-top: 10px;
       }
@@ -176,7 +184,15 @@
           site: window.location.origin,
         };
 
-        $.post("./test-email", data);
+        $.post("./test-email", data)
+          .done(function (data) {
+            $("#emailsent").show();
+            $("#emailerror").hide();
+          })
+          .fail(function () {
+            $("#emailsent").hide();
+            $("#emailerror").show();
+          });
       });
 
       $(".loginbutton").on("click", function (event) {

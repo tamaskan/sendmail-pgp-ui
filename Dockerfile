@@ -8,7 +8,7 @@ RUN curl -L >sendmail.tar.gz https://github.com/tamaskan/sendmail-pgp/releases/l
  && rm sendmail.tar.gz
 COPY . .
 
-RUN printf "ls\n/tmp/sendmail-pgp -smtp\nnpm run watch\n" > entrypoint.sh
+RUN printf "#!/bin/bash\n/tmp/sendmail-pgp -smtp &\nnpm run watch\n" > entrypoint.sh
 
 EXPOSE 3000
 EXPOSE 25
