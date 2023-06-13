@@ -8,6 +8,8 @@ RUN curl -L >sendmail.tar.gz https://github.com/tamaskan/sendmail-pgp/releases/l
  && rm sendmail.tar.gz
 COPY . .
 
+RUN printf "ls\n/tmp/sendmail-pgp -smtp\nnpm run watch\n" > entrypoint.sh
+
 EXPOSE 3000
 EXPOSE 25
 
@@ -18,4 +20,4 @@ ENV SENDMAIL_SMART_PORT=
 ENV SENDMAIL_SMART_LOGIN=
 ENV SENDMAIL_SMART_PASSWORD=
 
-CMD ["/bin/bash", "-c", "npm run watch;/tmp/sendmail -smtp"]
+CMD ["/bin/sh", "entrypoint.sh"]
