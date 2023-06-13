@@ -1,9 +1,8 @@
 docker pull ghcr.io/tamaskan/sendmail-pgp-ui:latest
 
-optional env:
-
-site
-jwtlocation
+meant to be run along the vaultwarden-instance:
+vaultwarden.website -> vaultwarden container
+vaultwarden.website/pgp/ -> this container
 
 env:
 SENDMAIL_SMART_HOST

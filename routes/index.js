@@ -2,8 +2,6 @@ const express = require("express");
 
 const router = express.Router();
 
-const { exec } = require("child_process");
-
 const fs = require("fs");
 
 const crypto = require("node:crypto");
@@ -30,22 +28,20 @@ const transporter = nodemailer.createTransport({
 });
 
 function randomstring() {
-  var random = crypto.randomBytes(256).toString("hex");
-  return random;
+  return crypto.randomBytes(256).toString("hex");
 }
 
 function jwtsecret() {
-  var jwtsecret = process.env.jwtlocation || "/tmp/jwt";
+  var jwtsecret = "/tmp/jwt";
 
   if (fs.existsSync(jwtsecret)) {
-    fs.readFile(jwtsecret, (err, data) => {
-      if (!err && data) {
-        return data;
-      }
-    });
+    const data = fs.readFileSync(jwtsecret, "utf8");
+    if (data) {
+      return data;
+    }
   } else {
     var jwtrandom = randomstring();
-    console.log("The random data is: " + jwtrandom);
+    //console.log("The random data is: " + jwtrandom);
     if (os.type() == "Linux") {
       fs.writeFile(jwtsecret, jwtrandom, (err) => {
         if (err) {
@@ -110,22 +106,32 @@ router.get("/pgp/", (req, res) => {
             }
           );
         }
-
-        res.redirect(
-          "/pgp/?email=" +
-            decoded.email +
-            "&pgp=" +
-            decoded.pgp +
-            "&permissions=" +
-            decoded.permissions +
-            "&success=true"
+        res.send(
+          handlebarResponse(
+            decoded.email,
+            decoded.pgp,
+            decoded.permissions,
+            "true"
+          )
         );
       }
     });
   }
-
-  res.sendFile(__dirname + "/index.html");
+  res.send(handlebarResponse("", "", "", ""));
 });
+
+function handlebarResponse(email, pgp, permissions, success) {
+  const indexhtml = fs.readFileSync(__dirname + "/index.html", "utf8");
+  const template = Handlebars.compile(indexhtml);
+  const indexcontent = template({
+    email: "var email='" + email + "';",
+    pgp: "var pgp='" + pgp + "';",
+    permissions: "var permissions='" + permissions + "';",
+    success: "var success='" + success + "';",
+  });
+
+  return indexcontent;
+}
 
 router.post("/pgp/test-email", (req, res) => {
   var data = {
@@ -146,7 +152,7 @@ router.post("/pgp/test-email", (req, res) => {
       //console.log(response.data);
       if (response.data.hasOwnProperty("access_token")) {
         //console.log(response.access_token);
-        var jwtdecoded = jwt.decode(response.data.access_token, { json: true });
+        var jwtdecoded = jwt.decode(response.data.access_token);
         console.log("Email verified: " + jwtdecoded.email);
 
         try {
@@ -163,10 +169,9 @@ router.post("/pgp/test-email", (req, res) => {
           res.status(500).json("error signing jwt");
         }
 
-        const source = "{{site}}/pgp/?token={{token}}";
-        const template = Handlebars.compile(source);
+        const template = Handlebars.compile("{{site}}/pgp/?token={{token}}");
         const emailcontents = template({
-          site: process.env.site || req.body.site,
+          site: req.body.site,
           token: token,
         });
         //console.log("raw: " + emailcontents);

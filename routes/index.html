@@ -14,6 +14,12 @@
     </style>
   </head>
   <body>
+    <script type="text/x-handlebars">
+      {{{email}}}
+      {{{pgp}}}
+      {{{permissions}}}
+      {{{success}}}
+    </script>
     <main class="form-signin w-100 m-auto login">
       <form>
         <h1 class="h3 mb-3 fw-normal">Please sign in to Vaultwarden</h1>
@@ -170,15 +176,6 @@
           site: window.location.origin,
         };
 
-        console.log(
-          "get-length:" +
-            (data.pgp.length +
-              data.permissions.length +
-              data.site.length +
-              50) +
-            "/2,083"
-        );
-
         $.post("./test-email", data);
       });
 
@@ -212,21 +209,22 @@
       });
 
       //prefill when query exists
-      let searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.has("email")) {
-        $("#email").val(searchParams.get("email"));
+
+      if (email.length > 0) {
+        $("#email").val(email);
       }
-      if (searchParams.has("pgp")) {
-        $("#pgp").val(searchParams.get("pgp"));
+      if (pgp.length > 0) {
+        $("#pgp").val(pgp);
       }
-      if (searchParams.has("permissions")) {
-        $("#permissions").val(searchParams.get("permissions"));
+      if (permissions.length > 0) {
+        $("#permissions").val(permissions);
       }
-      if (searchParams.has("success")) {
+      if (success.length > 0) {
         $("#success").show();
         $(".login").hide();
         $(".mainui").show();
       }
+      let searchParams = new URLSearchParams(window.location.search);
       if (searchParams.has("signature")) {
         $("#signaturefail").show();
       }
