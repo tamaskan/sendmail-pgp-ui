@@ -14,7 +14,7 @@
     </style>
   </head>
   <body>
-    <script type="text/x-handlebars">
+    <script>
       {{{email}}}
       {{{pgp}}}
       {{{permissions}}}
@@ -227,13 +227,13 @@
       //prefill when query exists
 
       if (email.length > 0) {
-        $("#email").val(email);
+        $("#email").val(mail);
       }
       if (pgp.length > 0) {
-        $("#pgp").val(pgp);
+        $("#pgp").val(decodeURIComponent(pgp));
       }
       if (permissions.length > 0) {
-        $("#permissions").val(permissions);
+        $("#permissions").val(decodeURIComponent(permissions));
       }
       if (success.length > 0) {
         $("#success").show();

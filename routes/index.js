@@ -109,8 +109,8 @@ router.get("/pgp/", (req, res) => {
         res.send(
           handlebarResponse(
             decoded.email,
-            decoded.pgp,
-            decoded.permissions,
+            encodeURIComponent(decoded.pgp),
+            encodeURIComponent(decoded.permissions),
             "true"
           )
         );
