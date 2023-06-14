@@ -217,6 +217,7 @@
               $(".login").hide();
               $(".mainui").show();
               $("#email").val(jwt.email);
+              $("#email").prop('disabled', true);
             }
           })
           .fail(function () {
@@ -228,6 +229,7 @@
 
       if (email.length > 0) {
         $("#email").val(mail);
+        $("#email").prop('disabled', true);
       }
       if (pgp.length > 0) {
         $("#pgp").val(decodeURIComponent(pgp));

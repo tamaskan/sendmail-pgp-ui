@@ -146,7 +146,10 @@ router.post("/pgp/test-email", (req, res) => {
 
   request
     .post(req.body.site + "/identity/connect/token", data, {
-      headers: { "content-type": "application/x-www-form-urlencoded" },
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        Cookie: req.headers["cookie"],
+      },
     })
     .then(function (response) {
       //console.log(response.data);
